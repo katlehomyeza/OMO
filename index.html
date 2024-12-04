@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>9 Buttons Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 2px;
+            margin-bottom: 20px;
+        }
+        .button-grid button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-radius: 50px;
+            background-color: #fff;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .button-grid button:hover {
+            background-color: #007bff;
+            color: #fff;
+            transform: scale(1.05);
+        }
+        table {
+            border-collapse: collapse;
+            width: 50%;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 18px;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="button-grid" id="grid"></div>
+
+    <table>
+        <tr>
+            <th>Player 1 (M)</th>
+            <th>Player 2 (O)</th>
+        </tr>
+        <tr>
+            <td id="player1-score">0</td>
+            <td id="player2-score">0</td>
+        </tr>
+    </table>
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script src="server.js"></script>
+<script>
+    const socket = io();
+
+    const grid = document.getElementById('grid');
+    const player1ScoreCell = document.getElementById('player1-score');
+    const player2ScoreCell = document.getElementById('player2-score');
+    const gridSize = 3;
+    let board = Array(gridSize).fill(" ").map(() => Array(gridSize).fill(" "));
+    let count = 0;
+
+    // Initialize the board and scores
+    socket.on('init', ({ board: serverBoard, scores }) => {
+        updateBoard(serverBoard);
+        updateScores(scores);
+    });
+
+    // Handle a move made by any player
+    socket.on('moveMade', ({ row, col, mark, board: serverBoard, scores }) => {
+        board[row][col] = mark;
+        const button = document.getElementById(row * gridSize + col + 1);
+        button.innerText = mark;
+        count++;
+        updateBoard(serverBoard);
+        updateScores(scores);
+    });
+
+    // Handle a reset game request
+    socket.on('resetGame', ({ board: resetBoard, scores }) => {
+        resetBoardUI();
+        updateScores(scores);
+    });
+
+    // Create buttons dynamically
+    for (let i = 0; i < gridSize * gridSize; i++) {
+        const button = document.createElement('button');
+        button.id = i + 1;
+        button.addEventListener('click', () => handleClick(button, i));
+        grid.appendChild(button);
+    }
+
+    function handleClick(button, index) {
+        const row = Math.floor(index / gridSize);
+        const col = index % gridSize;
+
+        if (board[row][col] !== " ") return; // Ignore already filled cells
+
+        const mark = count % 2 === 0 ? 'O' : 'M';
+        socket.emit('playerMove', { row, col, mark });
+    }
+
+    function updateScores(scores) {
+        player1ScoreCell.innerText = scores.player1;
+        player2ScoreCell.innerText = scores.player2;
+    }
+
+    function updateBoard(serverBoard) {
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                const button = document.getElementById(i * gridSize + j + 1);
+                button.innerText = serverBoard[i][j] !== " " ? serverBoard[i][j] : "";
+            }
+        }
+    }
+
+    function resetBoardUI() {
+        for (let i = 0; i < gridSize * gridSize; i++) {
+            const button = document.getElementById(i + 1);
+            button.innerText = '';
+        }
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                board[i][j] = " ";
+            }
+        }
+        count = 0;
+    }
+</script>
+
+</body>
+</html>
