@@ -1,248 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>9 Buttons Game</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 150px); /* Enlarged buttons */
-            grid-gap: 0; /* No spacing between buttons */
-            margin-bottom: 20px;
-        }
-
-        .button-grid button {
-            padding: 10px;
-            font-size: 24px; /* Enlarged font size */
-            cursor: pointer;
-            border: 1px solid #ccc;
-            background-color: #fff;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        .button-grid button:hover {
-            background-color: #007bff;
-            color: #fff;
-            transform: scale(1.05);
-        }
-        table {
-            border-collapse: collapse;
-            width: 50%;
-            text-align: center;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-size: 18px;
-        }
-        th {
-            background-color: #007bff;
-            color: #fff;
-        }
-        #status {
-            margin-bottom: 20px;
-            font-size: 18px;
-            color: #333;
-        }
-        #scores {
-            position: absolute;
-            left: 20px; /* Moves the score table to the left */
-            top: 20px;
-            border-collapse: collapse;
-            width: 200px;
-            text-align: center;
-            background-color: #fff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OMO Two Player</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <section id = "create-session">
-        <div>
-            <h1>Create a game session</h1>
-            <input type="text" id="session-id" placeholder="create game pin">
-            <button id="start-session">Enter game room</button>
-        </div>
-        <div>
-            <h1>enter a game session</h1>
-            <input type="text" id="session-id" placeholder="create game pin">
-            <button id="start-session">Enter game room</button>
-        </div>
-    </section>
+  <h1>OMO - Two Player Game</h1>
 
-     <!-- Player Name Input Screen -->
-     <div id="player-input">
-        <h1>Enter Player Names</h1>
-            <input type="text" id="player1-name" placeholder="Enter Player 1 Name">
-       
-        <button id="start-game">Start Game</button>
-    </div>
+  <section class="scores">
+    <article class="player-score player1 active" id="player1-display">
+      <h2>Player 1</h2>
+      <p id="score1">0</p>
+    </article>
+    <article class="player-score player2" id="player2-display">
+      <h2>Player 2</h2>
+      <p id="score2">0</p>
+    </article>
+  </section>
 
-    <div id="game-screen">
+  <section class="game-container">
+    <ul id="grid"></ul>
+    <svg id="line-overlay"></svg>
+  </section>
 
-    <div id="status">Waiting for players to join...</div>
-        <div class="button-grid" id="grid"></div>
-
-        <table id = "scores">
-            <tr>
-                <th id = "player1">Player 1 (M)</th>
-                <th id = "player2">Player 2 (O)</th>
-            </tr>
-            <tr>
-                <td id="player1-score">0</td>
-                <td id="player2-score">0</td>
-            </tr>
-        </table>
-    </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
-
-        const grid = document.getElementById('grid');
-        const scores = document.getElementById('scores');
-        const p1label = document.getElementById('player1');
-        const p2label = document.getElementById('player2');
-
-        const playerInputDiv = document.getElementById('player-input');
-        const gameScreenDiv = document.getElementById('game-screen');
-        const player1ScoreCell = document.getElementById('player1-score');
-        const player2ScoreCell = document.getElementById('player2-score');
-        const statusDiv = document.getElementById('status');
-        const player1NameInput = document.getElementById('player1-name');
-        const startGameButton = document.getElementById('start-game');
-        gameScreenDiv.style.display = 'none';
-
-        const gridSize = 3;
-        let board = Array(gridSize).fill(" ").map(() => Array(gridSize).fill(" "));
-        let playerMark = null;
-        let isMyTurn = false;
-
-         // Handle Start Game Button Click
-        startGameButton.addEventListener('click', () => {
-    
-
-            socket.emit('playerName', {playerName:player1NameInput.value.trim()})
-
-      
-            playerInputDiv.style.display = 'none';
-            gameScreenDiv.style.display = 'block';
-        });
-
-        // Initialize the board and scores
-        socket.on('init', ({ board: serverBoard, scores }) => {
-            updateBoard(serverBoard);
-            updateScores(scores);
-            
-        });
-
-        socket.on('Players',({players})=>{
-            p1label.innerText = "yebo";
-            p2label.innerText = players[1].name;
-
-        })
-
-        // Assign the player's mark and check readiness
-        socket.on('playerAssigned', ({ mark, ready }) => {
-            playerMark = mark;
-            statusDiv.innerText = ready ? "Game ready! Your turn." : "Waiting for another player...";
-            isMyTurn = mark === 'O'; // Player 1 starts
-        });
-
-        // Handle a move made by any player
-        socket.on('moveMade', ({ row, col, mark, board: serverBoard, scores, nextTurn }) => {
-            board[row][col] = mark;
-            const button = document.getElementById(row * gridSize + col + 1);
-            button.innerText = mark;
-            updateBoard(serverBoard);
-            updateScores(scores);
-            isMyTurn = nextTurn === playerMark;
-            statusDiv.innerText = isMyTurn ? "Your turn!" : "Waiting for opponent's move...";
-        });
-
-        // Handle a reset game request
-        socket.on('resetGame', ({ board: resetBoard, scores }) => {
-            resetBoardUI();
-            updateScores(scores);
-            statusDiv.innerText = "Game reset! Waiting for players...";
-        });
-
-        // Notify when a player disconnects
-        socket.on('playerDisconnected', () => {
-            statusDiv.innerText = "A player disconnected. Waiting for another player...";
-            resetBoardUI();
-        });
-
-        // Create buttons dynamically
-        for (let i = 0; i < gridSize * gridSize; i++) {
-            const button = document.createElement('button');
-            button.id = i + 1;
-            button.addEventListener('click', () => handleClick(button, i));
-            grid.appendChild(button);
-        }
-
-        function handleClick(button, index) {
-            if (!isMyTurn) return; // Ignore clicks if it's not this player's turn
-
-            const row = Math.floor(index / gridSize);
-            const col = index % gridSize;
-
-            if (board[row][col] !== " ") return; // Ignore already filled cells
-
-            if(checkGameOver()){
-                alert("game over!!!")
-            }
-
-            socket.emit('playerMove', { row, col, mark: playerMark });
-        }
-
-        function updateScores(scores) {
-            player1ScoreCell.innerText = scores.player1;
-            player2ScoreCell.innerText = scores.player2;
-        }
-
-        function updateBoard(serverBoard) {
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                    const button = document.getElementById(i * gridSize + j + 1);
-                    button.innerText = serverBoard[i][j] !== " " ? serverBoard[i][j] : "";
-                }
-            }
-        }
-
-        function checkGameOver() {
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                if (board[i][j] === " "){
-                        
-                        return false
-                        break
-                }
-                }
-            }
-            return true
-        }
-
-        function resetBoardUI() {
-            for (let i = 0; i < gridSize * gridSize; i++) {
-                const button = document.getElementById(i + 1);
-                button.innerText = '';
-            }
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                    board[i][j] = " ";
-                }
-            }
-        }
-    </script>
+  <script src="server.js"></script>
 </body>
 </html>
