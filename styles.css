@@ -134,3 +134,27 @@ h1 {
   left: var(--grid-gap);
   pointer-events: none;
 }
+
+#end-game-btn {
+  background-color: #ff4d4d;      /* Bright red */
+  color: white;                   /* Text color */
+  font-weight: bold;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;            /* Rounded corners */
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+#end-game-btn:hover {
+  background-color: var(--color-player1);      /* Darker red on hover */
+  transform: translateY(-2px);    /* Slight lift effect */
+  box-shadow: 0 6px 8px rgba(0,0,0,0.25);
+}
+
+#end-game-btn:active {
+  transform: translateY(0px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
