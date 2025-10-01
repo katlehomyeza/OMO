@@ -27,6 +27,8 @@ function detectOMO() {
 
   const countedOMOs1 = new Set(gameState.countedOMOs1);
   const countedOMOs2 = new Set(gameState.countedOMOs2);
+  
+  const previousCountedTotal = countedOMOs1.size + countedOMOs2.size;
 
   const incrementScore = (player) => {
     if (player === 1) gameState.score1++;
@@ -48,8 +50,8 @@ function detectOMO() {
       } else if (countedOMOs2.has(key)) {
         player = 2;
       } else {
-        // New OMO - award to the player who just completed it (previous player)
-        player = gameState.currentPlayer === 1 ? 2 : 1;
+        // New OMO - award to the player who just completed it (current player before switch)
+        player = gameState.currentPlayer;
         incrementScore(player);
         if (player === 1) countedOMOs1.add(key);
         else countedOMOs2.add(key);
@@ -98,7 +100,10 @@ function detectOMO() {
   gameState.countedOMOs2 = Array.from(countedOMOs2);
   gameState.allLines = lines; // Store all lines in game state
 
-  return lines;
+  const newCountedTotal = countedOMOs1.size + countedOMOs2.size;
+  const newOMOsCreated = newCountedTotal - previousCountedTotal;
+
+  return { lines, newOMOsCreated };
 }
 
 wss.on('connection', (ws) => {
@@ -118,9 +123,14 @@ wss.on('connection', (ws) => {
     if (msg.type === 'move') {
       if (gameState.board[msg.cell] === "" && gameState.currentPlayer === msg.player) {
         gameState.board[msg.cell] = msg.mark;
-        gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
 
-        const lines = detectOMO(); // update scores and get all lines
+        const { lines, newOMOsCreated } = detectOMO(); // update scores and get all lines
+
+        // If no new OMO was created, switch to the other player
+        if (newOMOsCreated === 0) {
+          gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+        }
+        // If OMO was created, current player stays the same (plays again)
 
         // Broadcast updated state + ALL lines to all players
         players.forEach(p => {
