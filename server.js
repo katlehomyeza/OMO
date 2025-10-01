@@ -13,6 +13,16 @@ const turnDisplay = document.getElementById("turn-display");
 grid.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
 grid.style.gridTemplateRows = `repeat(${gridSize}, ${cellSize}px)`;
 
+// Calculate total grid dimensions including gaps
+const totalWidth = gridSize * cellSize + (gridSize - 1) * gap;
+const totalHeight = gridSize * cellSize + (gridSize - 1) * gap;
+
+// Set SVG dimensions to cover the entire grid with padding
+svg.setAttribute("width", totalWidth + 20);
+svg.setAttribute("height", totalHeight + 20);
+svg.style.left = "-10px";
+svg.style.top = "-10px";
+
 const score1Div = document.getElementById("score1");
 const score2Div = document.getElementById("score2");
 const player1Display = document.getElementById("player1-display");
@@ -79,7 +89,7 @@ function renderBoard(lines) {
 
   // Show whose turn it is
   if (gameState.currentPlayer === playerNumber) {
-    turnDisplay.innerText = `Your turn!: ${playerNumber== 1? "O" : "M"}`;
+    turnDisplay.innerText = `Your turn!: ${playerNumber === 1 ? "O" : "M"}`;
   } else {
     turnDisplay.innerText = "Opponent's turn";
   }
@@ -88,10 +98,13 @@ function renderBoard(lines) {
   svg.innerHTML = "";
   lines.forEach(line => {
     const [start, , end] = line.cells; // Middle cell ignored for line
-    const x1 = start[1] * (cellSize + gap) + cellSize / 2;
-    const y1 = start[0] * (cellSize + gap) + cellSize / 2;
-    const x2 = end[1] * (cellSize + gap) + cellSize / 2;
-    const y2 = end[0] * (cellSize + gap) + cellSize / 2;
+    
+    // Add offset for SVG padding
+    const offset = 10;
+    const x1 = start[1] * (cellSize + gap) + cellSize / 2 + offset;
+    const y1 = start[0] * (cellSize + gap) + cellSize / 2 + offset;
+    const x2 = end[1] * (cellSize + gap) + cellSize / 2 + offset;
+    const y2 = end[0] * (cellSize + gap) + cellSize / 2 + offset;
 
     const svgLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
     svgLine.setAttribute("x1", x1);
@@ -104,3 +117,8 @@ function renderBoard(lines) {
     svg.appendChild(svgLine);
   });
 }
+
+const endGameBtn = document.getElementById("end-game-btn");
+endGameBtn.addEventListener('click', () => {
+  ws.send(JSON.stringify({ type: 'endGame' }));
+});

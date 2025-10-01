@@ -11,7 +11,8 @@ let gameState = {
   score1: 0,
   score2: 0,
   countedOMOs1: [],
-  countedOMOs2: []
+  countedOMOs2: [],
+  allLines: [] // Store all lines persistently
 };
 
 // Helper to detect OMOs and update scores
@@ -40,12 +41,20 @@ function detectOMO() {
     if (board[r1][c1] === "O" && board[r2][c2] === "M" && board[r3][c3] === "O") {
       const key = `${r1},${c1}-${r2},${c2}-${r3},${c3}`;
       let player;
-      if (!countedOMOs1.has(key) && !countedOMOs2.has(key)) {
+      
+      // Check if this OMO has already been counted
+      if (countedOMOs1.has(key)) {
+        player = 1;
+      } else if (countedOMOs2.has(key)) {
+        player = 2;
+      } else {
+        // New OMO - award to the player who just completed it (previous player)
         player = gameState.currentPlayer === 1 ? 2 : 1;
         incrementScore(player);
         if (player === 1) countedOMOs1.add(key);
         else countedOMOs2.add(key);
       }
+      
       return { cells, player };
     }
     return null;
@@ -87,6 +96,7 @@ function detectOMO() {
 
   gameState.countedOMOs1 = Array.from(countedOMOs1);
   gameState.countedOMOs2 = Array.from(countedOMOs2);
+  gameState.allLines = lines; // Store all lines in game state
 
   return lines;
 }
@@ -101,7 +111,7 @@ wss.on('connection', (ws) => {
   const playerNumber = players.length + 1;
   players.push(ws);
 
-  ws.send(JSON.stringify({ type: 'init', player: playerNumber, gameState }));
+  ws.send(JSON.stringify({ type: 'init', player: playerNumber, gameState, lines: gameState.allLines }));
 
   ws.on('message', (data) => {
     const msg = JSON.parse(data);
@@ -110,15 +120,32 @@ wss.on('connection', (ws) => {
         gameState.board[msg.cell] = msg.mark;
         gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
 
-        const lines = detectOMO(); // update scores
+        const lines = detectOMO(); // update scores and get all lines
 
-        // Broadcast updated state + lines to all players
+        // Broadcast updated state + ALL lines to all players
         players.forEach(p => {
           if (p.readyState === WebSocket.OPEN) {
             p.send(JSON.stringify({ type: 'update', gameState, lines }));
           }
         });
       }
+    }
+    if (msg.type === 'endGame') {
+      // Reset game state
+      gameState.board = Array(gridSize * gridSize).fill("");
+      gameState.currentPlayer = 1;
+      gameState.score1 = 0;
+      gameState.score2 = 0;
+      gameState.countedOMOs1 = [];
+      gameState.countedOMOs2 = [];
+      gameState.allLines = [];
+
+      // Notify all players
+      players.forEach(p => {
+        if (p.readyState === WebSocket.OPEN) {
+          p.send(JSON.stringify({ type: 'update', gameState, lines: [] }));
+        }
+      });
     }
   });
 
