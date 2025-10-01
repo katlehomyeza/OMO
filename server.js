@@ -1,123 +1,154 @@
-import express from 'express';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
+    const grid = document.getElementById('grid');
+    const gridSize = 6; // Change this to any size (3, 5, 9, etc.)
+    let currentPlayer = 1;
+    let currentMark = "O";
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-
-const app = express();
-const server = createServer(app);
-const io = new Server(server);
-
-let board = Array(3).fill(" ").map(() => Array(3).fill(" "));
-let scores = { player1: 0, player2: 0 };
-let players = []
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url)); // Get the current directory
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-console.log(__dirname)
-
-
-// Socket.IO connection
-io.on('connection', (socket) => {
-
-     // Check if there is room for more players
-     if (players.length >= 2) {
-        socket.emit('gameFull', 'The game is already full.');
-        console.log('Player rejected: game is full');
-        socket.disconnect();
-        return;
-    }
-
-    // Notify all players when the game is ready
-    if (players.length === 2) {
-        io.emit('gameReady', 'The game is starting!');
-        io.emit('Players', {players:players});
-        
-    }
-
-    socket.on('playerName',({playerName})=>{
-        // Add player to the list and assign mark
-        const playerMark = players.length === 0 ? 'O' : 'M';
-        const player = { id: socket.id, mark: playerMark ,name:playerName};
-        players.push(player);
-        socket.emit('playerAssigned', { mark: playerMark, board, scores , ready:players.length === 2?true:false });
-        console.log(players)
-
-    })
-
-     
-
-    // Send the initial state
-    socket.emit('init', { board, scores });
-
-    socket.on('playerMove', ({ row, col, mark }) => {
-        if (board[row][col] === " ") { // Only accept valid moves
-            board[row][col] = mark;
-
-            // Check for "OMO"
-            const omoCount = checkOMO(row, col, mark);
-            const currentPlayer = mark === 'M' ? 'player1' : 'player2';
-            scores[currentPlayer] += omoCount;
-
-            // Broadcast the move and updated scores
-            io.emit('moveMade', { row, col, mark, board, scores,nextTurn:mark ==='M'? 'O':'M' });
-
-
-        }
-       
-    });
-
-    socket.on('resetGame', () => {
-        board = Array(3).fill(" ").map(() => Array(3).fill(" "));
-        scores = { player1: 0, player2: 0 };
-        io.emit('resetGame', { board, scores });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('A player disconnected:', socket.id);
-        players = players.filter(player => player.id !== socket.id);
-        console.log('Remaining players:', players);
-    });
+    let score1 = 0;
+    let score2 = 0;
+    const score1Div = document.getElementById("score1");
+    const score2Div = document.getElementById("score2");
+    const player1Display = document.getElementById("player1-display");
+    const player2Display = document.getElementById("player2-display");
     
-});
+    const countedOMOs1 = new Set();
+    const countedOMOs2 = new Set();
 
-server.listen(3000, () => {
-    console.log('Server running at http://localhost:3000');
-});
+    // Calculate cell and gap sizes
+    const cellSize = 60;
+    const gap = 5;
+    
+    // Set up dynamic grid
+    grid.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
+    grid.style.gridTemplateRows = `repeat(${gridSize}, ${cellSize}px)`;
+    
+    // Set up SVG overlay size
+    const svgSize = gridSize * cellSize + (gridSize - 1) * gap;
+    const svg = document.getElementById("line-overlay");
+    svg.setAttribute("width", svgSize);
+    svg.setAttribute("height", svgSize);
 
-// OMO Check Logic
-function checkOMO(row, col, mark) {
-    const opponentMark = mark === 'M' ? 'O' : 'M';
-    let omoCount = 0;
-
-    // Check row
-    if (checkLine(board[row], opponentMark)) omoCount++;
-
-    // Check column
-    const column = board.map(r => r[col]);
-    if (checkLine(column, opponentMark)) omoCount++;
-
-    // Check main diagonal
-    if (row === col) {
-        const mainDiagonal = board.map((r, i) => r[i]);
-        if (checkLine(mainDiagonal, opponentMark)) omoCount++;
+    function incrementScore(player) {
+      if (player === 1) {
+        score1++;
+        score1Div.innerText = score1;
+      } else {
+        score2++;
+        score2Div.innerText = score2;
+      }
     }
 
-    // Check anti-diagonal
-    if (row + col === board.length - 1) {
-        const antiDiagonal = board.map((r, i) => r[board.length - i - 1]);
-        if (checkLine(antiDiagonal, opponentMark)) omoCount++;
+    function updateActivePlayer() {
+      if (currentPlayer === 1) {
+        player1Display.classList.add('active');
+        player2Display.classList.remove('active');
+      } else {
+        player2Display.classList.add('active');
+        player1Display.classList.remove('active');
+      }
     }
 
-    return omoCount;
-}
+    // Create grid buttons
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      const button = document.createElement('button');
+      button.id = i;
+      button.innerText = "";
+      button.addEventListener('click', () => {
+        if (button.innerText !== "") return;
 
-function checkLine(line, opponentMark) {
-    return line.join('').trim().includes('OMO');
-}
+        button.innerText = currentMark;
+        
+        currentPlayer = currentPlayer === 1 ? 2 : 1;
+        currentMark = currentMark === "O" ? "M" : "O";
+        
+        updateActivePlayer();
+        detectOMO();
+      });
+      grid.appendChild(button);
+    }
 
+    const detectOMO = () => {
+      const board = [];
+      for (let i = 0; i < gridSize; i++) {
+        board.push([]);
+        for (let j = 0; j < gridSize; j++) {
+          board[i][j] = document.getElementById(i * gridSize + j).innerText;
+        }
+      }
 
+      svg.innerHTML = "";
+
+      const drawLine = (cells, key, player) => {
+        const [r1, c1] = cells[0];
+        const [r3, c3] = cells[2];
+
+        const x1 = c1 * (cellSize + gap) + cellSize / 2;
+        const y1 = r1 * (cellSize + gap) + cellSize / 2;
+        const x2 = c3 * (cellSize + gap) + cellSize / 2;
+        const y2 = r3 * (cellSize + gap) + cellSize / 2;
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", player === 1 ? "#ff6b6b" : "#4ecdc4");
+        line.setAttribute("stroke-width", "5");
+        line.setAttribute("stroke-linecap", "round");
+
+        svg.appendChild(line);
+
+        const countedSet = player === 1 ? countedOMOs1 : countedOMOs2;
+        const fullKey = `${player}-${key}`;
+        
+        if (!countedSet.has(fullKey)) {
+          countedSet.add(fullKey);
+          incrementScore(player);
+        }
+      };
+
+      // Check rows
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j <= gridSize - 3; j++) {
+          if (board[i][j] === "O" && board[i][j+1] === "M" && board[i][j+2] === "O") {
+            const key = `row-${i}-${j}`;
+            const player = countedOMOs1.has(`1-${key}`) ? 1 : countedOMOs2.has(`2-${key}`) ? 2 : currentPlayer === 1 ? 2 : 1;
+            drawLine([[i,j],[i,j+1],[i,j+2]], key, player);
+          }
+        }
+      }
+      
+      // Check cols
+      for (let j = 0; j < gridSize; j++) {
+        for (let i = 0; i <= gridSize - 3; i++) {
+          if (board[i][j] === "O" && board[i+1][j] === "M" && board[i+2][j] === "O") {
+            const key = `col-${j}-${i}`;
+            const player = countedOMOs1.has(`1-${key}`) ? 1 : countedOMOs2.has(`2-${key}`) ? 2 : currentPlayer === 1 ? 2 : 1;
+            drawLine([[i,j],[i+1,j],[i+2,j]], key, player);
+          }
+        }
+      }
+      
+      // Check diagonals (top-left to bottom-right)
+      for (let i = 0; i <= gridSize - 3; i++) {
+        for (let j = 0; j <= gridSize - 3; j++) {
+          if (board[i][j] === "O" && board[i+1][j+1] === "M" && board[i+2][j+2] === "O") {
+            const key = `diag-main-${i}-${j}`;
+            const player = countedOMOs1.has(`1-${key}`) ? 1 : countedOMOs2.has(`2-${key}`) ? 2 : currentPlayer === 1 ? 2 : 1;
+            drawLine([[i,j],[i+1,j+1],[i+2,j+2]], key, player);
+          }
+        }
+      }
+      
+      // Check diagonals (top-right to bottom-left)
+      for (let i = 0; i <= gridSize - 3; i++) {
+        for (let j = 2; j < gridSize; j++) {
+          if (board[i][j] === "O" && board[i+1][j-1] === "M" && board[i+2][j-2] === "O") {
+            const key = `diag-anti-${i}-${j}`;
+            const player = countedOMOs1.has(`1-${key}`) ? 1 : countedOMOs2.has(`2-${key}`) ? 2 : currentPlayer === 1 ? 2 : 1;
+            drawLine([[i,j],[i+1,j-1],[i+2,j-2]], key, player);
+          }
+        }
+      }
+    };
+
+    updateActivePlayer();
