@@ -1,23 +1,21 @@
 const ws = new WebSocket("ws://localhost:8080");
 let playerNumber = null;
+let playerName= null;
 let gameState = null;
+let currentRoom = null;
 
 const grid = document.getElementById('grid');
 const gridSize = 6;
 const cellSize = 60;
 const gap = 5;
 const svg = document.getElementById("line-overlay");
-
 const turnDisplay = document.getElementById("turn-display");
 
 grid.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
 grid.style.gridTemplateRows = `repeat(${gridSize}, ${cellSize}px)`;
 
-// Calculate total grid dimensions including gaps
 const totalWidth = gridSize * cellSize + (gridSize - 1) * gap;
 const totalHeight = gridSize * cellSize + (gridSize - 1) * gap;
-
-// Set SVG dimensions to cover the entire grid with padding
 svg.setAttribute("width", totalWidth + 20);
 svg.setAttribute("height", totalHeight + 20);
 svg.style.left = "-10px";
@@ -25,12 +23,49 @@ svg.style.top = "-10px";
 
 const score1Div = document.getElementById("score1");
 const score2Div = document.getElementById("score2");
+const playerLabel1 = document.getElementById("player1");
+const playerLabel2 = document.getElementById("player2");
 const player1Display = document.getElementById("player1-display");
 const player2Display = document.getElementById("player2-display");
+const createBtn = document.getElementById("create-btn");
+const joinBtn = document.getElementById("join-btn");
+const roomInput = document.getElementById("room-id");
+const lobbyStatus = document.getElementById("lobby-status");
+const playerNameInput = document.getElementById("player-name");
+
+createBtn.addEventListener("click", () => {
+  const roomId = roomInput.value.trim() || "ROOM" + Math.floor(Math.random() * 1000);
+  const playerName = playerNameInput.value.trim();
+  if (!playerName) {
+    lobbyStatus.innerText = "❌ Please enter a valid player name!";
+    playerNameInput.focus();
+  } else if (playerName.length > 15) {
+    lobbyStatus.innerText = "❌ Name too long! Max 15 characters.";
+    playerNameInput.focus();
+  } else {
+    // Send create room request
+    ws.send(JSON.stringify({ type: "createRoom", roomId, playerName }));
+    lobbyStatus.innerText = `📢 Creating room: ${roomId} as ${playerName}...`;
+  }
+});
+
+
+joinBtn.addEventListener("click", () => {
+  const playerName = playerNameInput.value.trim();
+  const roomId = roomInput.value.trim();
+  if (!roomId) {
+    lobbyStatus.innerText = "⚠️ Please enter a room code to join.";
+    return;
+  }
+  ws.send(JSON.stringify({ type: "joinRoom", roomId, playerName }));
+  lobbyStatus.innerText = `🔗 Joining room: ${roomId}...`;
+
+});
+
 
 const cells = [];
 
-// Create grid buttons
+// Build grid buttons
 for (let i = 0; i < gridSize * gridSize; i++) {
   const button = document.createElement('button');
   button.id = i;
@@ -41,6 +76,7 @@ for (let i = 0; i < gridSize * gridSize; i++) {
 
     ws.send(JSON.stringify({
       type: 'move',
+      roomId: currentRoom,   // 🔑 send room with move
       cell: i,
       player: playerNumber,
       mark
@@ -50,18 +86,25 @@ for (let i = 0; i < gridSize * gridSize; i++) {
   cells.push(button);
 }
 
+// Handle messages from server
 ws.onmessage = (msg) => {
   const data = JSON.parse(msg.data);
 
   if (data.type === 'full') {
-    alert("Game is full!");
+    alert(`Room ${data.roomId} is full!`);
   }
 
   if (data.type === 'init') {
     playerNumber = data.player;
+    playerName = data.playerName;
+    currentRoom = data.roomId;
     gameState = data.gameState;
     renderBoard(data.lines || []);
-    alert(`You are Player ${playerNumber}`);
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("game").style.display = "block";
+
+    playerLabel1.innerText = data.player1Name || "Waiting...";
+    playerLabel2.innerText = data.player2Name || "Waiting...";
   }
 
   if (data.type === 'update') {
@@ -70,15 +113,16 @@ ws.onmessage = (msg) => {
   }
 };
 
+// Render game state
 function renderBoard(lines) {
-  // Update cells
+  // Update marks
   gameState.board.forEach((mark, i) => cells[i].innerText = mark);
 
   // Update scores
   score1Div.innerText = gameState.score1;
   score2Div.innerText = gameState.score2;
 
-  // Update active player highlight
+  // Turn highlight
   if (gameState.currentPlayer === 1) {
     player1Display.classList.add('active');
     player2Display.classList.remove('active');
@@ -87,19 +131,17 @@ function renderBoard(lines) {
     player1Display.classList.remove('active');
   }
 
-  // Show whose turn it is
+  // Turn message
   if (gameState.currentPlayer === playerNumber) {
-    turnDisplay.innerText = `Your turn!: ${playerNumber === 1 ? "O" : "M"}`;
+    turnDisplay.innerText = `Your turn! (${playerNumber === 1 ? "O" : "M"})`;
   } else {
     turnDisplay.innerText = "Opponent's turn";
   }
 
-  // Draw OMO lines correctly
+  // Draw OMO lines
   svg.innerHTML = "";
   lines.forEach(line => {
-    const [start, , end] = line.cells; // Middle cell ignored for line
-    
-    // Add offset for SVG padding
+    const [start, , end] = line.cells;
     const offset = 10;
     const x1 = start[1] * (cellSize + gap) + cellSize / 2 + offset;
     const y1 = start[0] * (cellSize + gap) + cellSize / 2 + offset;
@@ -118,7 +160,8 @@ function renderBoard(lines) {
   });
 }
 
+// End game button
 const endGameBtn = document.getElementById("end-game-btn");
 endGameBtn.addEventListener('click', () => {
-  ws.send(JSON.stringify({ type: 'endGame' }));
+  ws.send(JSON.stringify({ type: 'endGame', roomId: currentRoom }));
 });

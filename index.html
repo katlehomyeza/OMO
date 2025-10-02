@@ -7,16 +7,36 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<!-- LOBBY SECTION -->
+<section id="lobby" class="lobby">
+  <h2>🎲 OMO Lobby</h2>
+
+  <div class="lobby-box">
+    <label for="player-name">Enter PlayerName:</label>
+    <input id="player-name" placeholder="e.g. Barca UCL 2025" />
+    <label for="room-id">Room Code:</label>
+    <input id="room-id" placeholder="e.g. OMO123" />
+
+    <div class="lobby-buttons">
+      <button id="create-btn">Create Room</button>
+      <button id="join-btn">Join Room</button>
+    </div>
+  </div>
+
+  <div id="lobby-status" class="status"></div>
+</section>
+
+<section id = "game">
   <h1>OMO - Two Player Game</h1>
   <div id="turn-display" style="font-weight:bold; margin-bottom:10px;"></div>
 
   <section class="scores">
     <article class="player-score player1 active" id="player1-display">
-      <h2>Player 1</h2>
+      <h2 id="player1">Player 1</h2>
       <p id="score1">0</p>
     </article>
     <article class="player-score player2" id="player2-display">
-      <h2>Player 2</h2>
+      <h2 id = "player2">Player 2</h2>
       <p id="score2">0</p>
     </article>
   </section>
@@ -26,6 +46,7 @@
   <section class="game-container">
     <ul id="grid"></ul>
     <svg id="line-overlay"></svg>
+  </section>
   </section>
 
   <script src="server.js"></script>
