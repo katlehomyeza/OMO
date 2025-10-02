@@ -158,3 +158,68 @@ h1 {
   transform: translateY(0px);
   box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
+
+#game{
+  display: none;
+}
+
+.lobby {
+  text-align: center;
+  font-family: "Courier New", monospace;
+  margin: 30px auto;
+  max-width: 400px;
+  padding: 20px;
+  border: 3px dashed #333;
+  border-radius: 12px;
+  background: #fffef8;
+  box-shadow: 5px 5px 0 #333;
+}
+
+.lobby h2 {
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  text-decoration: underline;
+}
+
+.lobby-box {
+  margin-bottom: 20px;
+}
+
+.lobby input {
+  padding: 10px;
+  font-size: 1.1em;
+  width: 200px;
+  border: 2px solid #333;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.lobby-buttons {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.lobby button {
+  padding: 10px 16px;
+  font-size: 1.1em;
+  border: 2px solid #333;
+  background: #fdfdfd;
+  cursor: pointer;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 #333;
+  transition: transform 0.1s ease;
+}
+
+.lobby button:hover {
+  background: #f1f1f1;
+  transform: translateY(-2px);
+}
+
+.status {
+  margin-top: 15px;
+  font-style: italic;
+  font-size: 1em;
+  color: #444;
+}
