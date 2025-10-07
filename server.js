@@ -5,12 +5,12 @@ import { MultiplayerGame } from "./multiplayer.js";
 import { GameState } from "./gamestate.js";
 
 export const GAME_CONFIG = {
-  gridSize: 6,
+  gridSize: 12,
   cellSize: 60,
   gap: 5,
   maxNameLength: 15,
-  aiMoveDelay: 500,
-  aiConsecutiveMoveDelay: 2000,
+  aiMoveDelay: 1000,
+  aiConsecutiveMoveDelay: 1500,
   lineWidth: 5,
   svgPadding: 10,
   player1Mark: "O",
@@ -238,6 +238,13 @@ class GameController {
     document.getElementById("join-btn").addEventListener("click", () => this.joinRoom());
     document.getElementById("single-btn").addEventListener("click", () => this.startSinglePlayer());
     document.getElementById("end-game-btn").addEventListener("click", () => this.endGame());
+
+    document.querySelectorAll('.difficulty-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      });
+    });
   }
 
   initializeWebSocketHandlers() {
@@ -291,8 +298,10 @@ class GameController {
   startSinglePlayer() {
     const name = this.uiManager.getPlayerName() || "Player";
     this.currentGameMode = "SINGLE_PLAYER";
+    const selectedDifficultyBtn = document.querySelector('.difficulty-btn.selected');
+    const difficulty = selectedDifficultyBtn ? selectedDifficultyBtn.dataset.difficulty : 'MEDIUM';
     this.uiManager.showGame();
-    this.singlePlayerGame.start(name);
+    this.singlePlayerGame.start(name, difficulty);
   }
 
   handleMultiplayerInit(data) {

@@ -25,7 +25,16 @@
 
   <div id="lobby-status" class="status"></div>
     <h5>OR</h5>
-    <button id="single-btn">Play Alone 🎲</button>
+    <div class="single-player-section">
+        <h3>Play Alone 🎲</h3>
+        <div class="difficulty-buttons">
+        <button class="difficulty-btn" data-difficulty="EASY">🟢 Easy</button>
+        <button class="difficulty-btn selected" data-difficulty="MEDIUM">🟡 Medium</button>
+        <button class="difficulty-btn" data-difficulty="HARD">🔴 Hard</button>
+        <button class="difficulty-btn" data-difficulty="EXPERT">🔥 Expert</button>
+        </div>
+        <button id="single-btn">Start Single Player</button>
+    </div>
 </section>
 
 <section id = "game">
