@@ -19,8 +19,6 @@ export const GAME_CONFIG = {
   player2Color: "#4ecdc4"
 };
 
-
-
 class GameRenderer {
   constructor() {
     this.grid = document.getElementById('grid');
@@ -142,12 +140,18 @@ class UIManager {
     this.lobbyStatus = document.getElementById("lobby-status");
     this.roomInput = document.getElementById("room-id");
     this.playerNameInput = document.getElementById("player-name");
+    this.gridSize = document.getElementById("grid-size")
   }
 
   showLobby() {
     this.lobbySection.style.display = "block";
     this.gameSection.style.display = "none";
   }
+
+  getSelectedGridSize() {
+    return parseInt(this.gridSize.value, 10);
+  }
+
 
   showGame() {
     this.lobbySection.style.display = "none";
@@ -297,9 +301,27 @@ class GameController {
 
   startSinglePlayer() {
     const name = this.uiManager.getPlayerName() || "Player";
-    this.currentGameMode = "SINGLE_PLAYER";
     const selectedDifficultyBtn = document.querySelector('.difficulty-btn.selected');
     const difficulty = selectedDifficultyBtn ? selectedDifficultyBtn.dataset.difficulty : 'MEDIUM';
+
+    const gridSize = this.uiManager.getSelectedGridSize();
+    GAME_CONFIG.gridSize = gridSize;
+
+    this.renderer.grid.innerHTML = "";
+
+    this.patternDetector = new PatternDetector(gridSize);
+    this.renderer.initializeGrid();
+    this.renderer.initializeSVG();
+
+    this.cells = this.createGridCells();
+
+    this.singlePlayerGame = new SinglePlayerGame(
+      new GameState(),
+      this.patternDetector,
+      this.renderer,
+      this.cells
+    );
+    this.currentGameMode = "SINGLE_PLAYER";
     this.uiManager.showGame();
     this.singlePlayerGame.start(name, difficulty);
   }
