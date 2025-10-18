@@ -17,10 +17,9 @@
 
     <label for="grid-size">Select Grid Size:</label>
     <select id="grid-size">
+    <option value="3">3 x 3</option>
     <option value="6">6 x 6</option>
-    <option value="8">8 x 8</option>
-    <option value="10">10 x 10</option>
-    <option value="12" selected>12 x 12</option>
+    <option value="9">9 x 9</option>
     </select>
 
     <label for="room-id">Room Code:</label>
@@ -32,18 +31,18 @@
     </div>
   </div>
 
-  <div id="lobby-status" class="status"></div>
+  <section id="lobby-status" class="status"></div>
     <h5>OR</h5>
-    <div class="single-player-section">
+    <section class="single-player-section">
         <h3>Play Alone 🎲</h3>
         <div class="difficulty-buttons">
         <button class="difficulty-btn" data-difficulty="EASY">🟢 Easy</button>
         <button class="difficulty-btn selected" data-difficulty="MEDIUM">🟡 Medium</button>
         <button class="difficulty-btn" data-difficulty="HARD">🔴 Hard</button>
         <button class="difficulty-btn" data-difficulty="EXPERT">🔥 Expert</button>
-        </div>
+        </section>
         <button id="single-btn">Start Single Player</button>
-    </div>
+  </section>
 
      <!-- HOW TO PLAY SECTION -->
   <section id="how-to-play" class="how-to-play">
@@ -63,7 +62,7 @@
 
 <section id = "game">
   <h1>OMO - Two Player Game</h1>
-  <div id="turn-display" style="font-weight:bold; margin-bottom:10px;"></div>
+  <article id="turn-display" style="font-weight:bold; margin-bottom:10px;"></article>
 
   <section class="scores">
     <article class="player-score player1 active" id="player1-display">
@@ -82,7 +81,26 @@
     <ul id="grid"></ul>
     <svg id="line-overlay"></svg>
   </section>
+</section>
+
+  <!-- GAME OVER MODAL -->
+  <section id="game-over-modal" class="modal hidden">
+    <article class="modal-content paper-style">
+      <h2>📝 Game Over!</h2>
+      <p id="winner-text">Player 1 Wins!</p>
+
+      <div class="score-summary">
+        <p><strong>Player 1:</strong> <span id="final-score1">0</span></p>
+        <p><strong>Player 2:</strong> <span id="final-score2">0</span></p>
+      </div>
+
+      <div class="modal-buttons">
+        <button id="restart-btn">🔄 Play Again</button>
+        <button id="exit-btn">🏠 Back to Lobby</button>
+      </div>
+    </article>
   </section>
+
 
   <script type="module" src="server.js"></script>
 </body>
