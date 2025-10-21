@@ -1,13 +1,12 @@
 import WebSocket, { WebSocketServer } from "ws";
 
 const wss = new WebSocketServer({ port: 8080 });
-const gridSize = 6;
 
 // Store multiple rooms
-let rooms = {}; // { roomId: { players: [], gameState: {} } }
+let rooms = {}; // { roomId: { players: [], gameState: {}, gridSize: number } }
 
 // Create a fresh game state
-function createGameState() {
+function createGameState(gridSize) {
   return {
     board: Array(gridSize * gridSize).fill(""),
     currentPlayer: 1,
@@ -20,7 +19,7 @@ function createGameState() {
 }
 
 // Detect OMO logic
-function detectOMO(gameState) {
+function detectOMO(gameState, gridSize) {
   const board = [];
   for (let i = 0; i < gridSize; i++) {
     board.push([]);
@@ -119,19 +118,25 @@ wss.on("connection", (ws) => {
         return;
       }
 
+      const gridSize = msg.gridSize || 6; // Use provided grid size or default to 6
+
       rooms[msg.roomId] = {
         players: [ws],
         playerNames: [msg.playerName, null],
-        gameState: createGameState()
+        gameState: createGameState(gridSize),
+        gridSize: gridSize
       };
 
       ws.roomId = msg.roomId;
       ws.playerNumber = 1;
-      ws.playerName = msg.playerName
-      
+      ws.playerName = msg.playerName;
 
-      ws.send(JSON.stringify({ type: "roomCreated", roomId: msg.roomId }));
-      console.log(`Room ${msg.roomId} created by ${msg.playerName}`);
+      ws.send(JSON.stringify({ 
+        type: "roomCreated", 
+        roomId: msg.roomId,
+        gridSize: gridSize
+      }));
+      console.log(`Room ${msg.roomId} created by ${msg.playerName} with grid size ${gridSize}`);
       return;
     }
 
@@ -164,11 +169,11 @@ wss.on("connection", (ws) => {
             lines: room.gameState.allLines,
             playerName: msg.playerName,
             player1Name: room.playerNames[0],
-            player2Name: room.playerNames[1]
+            player2Name: room.playerNames[1],
+            gridSize: room.gridSize
           }));
         }
       });
-      console.log(rooms[msg.roomId])
       console.log(`${msg.playerName} joined room ${msg.roomId}`);
       return;
     }
@@ -183,16 +188,24 @@ wss.on("connection", (ws) => {
       if (gs.board[msg.cell] === "" && gs.currentPlayer === msg.player) {
         gs.board[msg.cell] = msg.mark;
 
-        const { lines, newOMOsCreated } = detectOMO(gs);
+        const { lines, newOMOsCreated } = detectOMO(gs, room.gridSize);
 
         if (newOMOsCreated === 0) {
           gs.currentPlayer = gs.currentPlayer === 1 ? 2 : 1;
         }
 
+        // Check if board is full
+        const isBoardFull = gs.board.every(cell => cell !== "");
+
         // Broadcast update
         room.players.forEach(p => {
           if (p.readyState === WebSocket.OPEN) {
-            p.send(JSON.stringify({ type: "update", gameState: gs, lines }));
+            p.send(JSON.stringify({ 
+              type: "update", 
+              gameState: gs, 
+              lines,
+              isGameOver: isBoardFull
+            }));
           }
         });
       }
@@ -205,11 +218,16 @@ wss.on("connection", (ws) => {
       const room = rooms[ws.roomId];
       if (!room) return;
 
-      room.gameState = createGameState();
+      room.gameState = createGameState(room.gridSize);
 
       room.players.forEach(p => {
         if (p.readyState === WebSocket.OPEN) {
-          p.send(JSON.stringify({ type: "update", gameState: room.gameState, lines: [] }));
+          p.send(JSON.stringify({ 
+            type: "update", 
+            gameState: room.gameState, 
+            lines: [],
+            isGameOver: false
+          }));
         }
       });
       return;

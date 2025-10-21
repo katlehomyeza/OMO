@@ -37,6 +37,7 @@ export class SinglePlayerGame {
     this.lines = [];
     this.playerNumber = null;
     this.playerName = null;
+    this.aiName = null;
     this.difficulty = DIFFICULTY_LEVELS.MEDIUM;
   }
 
@@ -47,11 +48,12 @@ export class SinglePlayerGame {
   start(name, difficulty = 'EXPERT') {
     this.playerNumber = Math.random() < 0.5 ? 1 : 2;
     this.playerName = name;
+    this.aiName = `AI Bot (${this.difficulty.name})`;
     this.lines = [];
     this.setDifficulty(difficulty);
     
     this.gameState = new GameState();
-    this.renderer.setPlayerNames(name, `AI Bot (${this.difficulty.name})`);
+    this.renderer.setPlayerNames(name, this.aiName);
     this.render();
   }
 
@@ -64,7 +66,7 @@ export class SinglePlayerGame {
     const scoredOMO = this.checkAndUpdateOMO(1);
     
     if (this.gameState.isBoardFull()) {
-      this.render();
+      this.render(true);
       return;
     }
     
@@ -83,6 +85,7 @@ export class SinglePlayerGame {
     const emptyCells = this.gameState.getEmptyCells();
     
     if (emptyCells.length === 0) {
+      this.render(true);
       return;
     }
 
@@ -91,16 +94,18 @@ export class SinglePlayerGame {
     this.gameState.makeMove(cellIndex, GAME_CONFIG.player2Mark);
     const scoredOMO = this.checkAndUpdateOMO(2);
 
-    if (scoredOMO && !this.gameState.isBoardFull()) {
+    if (this.gameState.isBoardFull()) {
+      this.render(true);
+      return;
+    }
+
+    if (scoredOMO) {
       this.render();
       setTimeout(() => this.makeAIMove(), GAME_CONFIG.aiConsecutiveMoveDelay);
       return;
     }
 
-    if (!this.gameState.isBoardFull()) {
-      this.gameState.switchPlayer();
-    }
-    
+    this.gameState.switchPlayer();
     this.render();
   }
 
@@ -278,7 +283,15 @@ export class SinglePlayerGame {
     return `AI's turn (${GAME_CONFIG.player2Mark})`;
   }
 
-  render() {
-    this.renderer.render(this.cells, this.gameState, this.lines, this.getTurnMessage());
+  render(isGameOver = false) {
+    this.renderer.render(
+      this.cells, 
+      this.gameState, 
+      this.lines, 
+      this.getTurnMessage(), 
+      isGameOver,
+      this.playerName,
+      this.aiName
+    );
   }
 }
