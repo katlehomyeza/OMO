@@ -382,8 +382,8 @@
       }
       
       #grid button {
-        width: clamp(30px, 7vw, 45px);
-        height: clamp(30px, 7vw, 45px);
+        width: clamp(30px, 14vw, 45px);
+        height: clamp(30px, 14vw, 45px);
       }
     }
 
@@ -398,8 +398,8 @@
       }
       
       #grid button {
-        width: clamp(28px, 6.5vw, 40px);
-        height: clamp(28px, 6.5vw, 40px);
+        width: clamp(28px, 13vw, 40px);
+        height: clamp(28px, 13vw, 40px);
         font-size: clamp(0.85rem, 3.5vw, 1.2rem);
         border-width: 1.5px;
       }

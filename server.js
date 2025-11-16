@@ -268,7 +268,7 @@ class UIManager {
 
 class GameController {
   constructor() {
-    this.wsManager = new WebSocketManager("ws://localhost:8080");
+    this.wsManager = new WebSocketManager("https://omo-production.up.railway.app/");
     this.uiManager = new UIManager();
     this.renderer = new GameRenderer(true); // PASS true TO ENABLE MODAL
     this.patternDetector = new PatternDetector(GAME_CONFIG.gridSize);

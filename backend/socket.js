@@ -107,7 +107,14 @@ function detectOMO(gameState, gridSize) {
 }
 
 wss.on("connection", (ws) => {
+  const messageCounts = new Map();
   ws.on("message", (data) => {
+    const count = messageCounts.get(ws) || 0;
+    if (count > 1000) { 
+      ws.close();
+      return;
+    }
+    messageCounts.set(ws, count + 1);
     const msg = JSON.parse(data);
 
     // -------------------
