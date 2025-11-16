@@ -71,11 +71,13 @@ export class SinglePlayerGame {
     }
     
     if (scoredOMO) {
+      this.gameState.playAudio(scoredOMO);
       this.render();
       return;
     }
     
     this.gameState.switchPlayer();
+    this.gameState.playAudio(scoredOMO);
     this.render();
     
     setTimeout(() => this.makeAIMove(), GAME_CONFIG.aiMoveDelay);
@@ -100,12 +102,14 @@ export class SinglePlayerGame {
     }
 
     if (scoredOMO) {
+      this.gameState.playAudio(scoredOMO);
       this.render();
       setTimeout(() => this.makeAIMove(), GAME_CONFIG.aiConsecutiveMoveDelay);
       return;
     }
 
     this.gameState.switchPlayer();
+    this.gameState.playAudio(scoredOMO);
     this.render();
   }
 

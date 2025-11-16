@@ -31,7 +31,6 @@ export class MultiplayerGame {
   }
 
   handleMove(cellIndex) {
-    // Check if game state exists
     if (!this.gameState) {
       console.log("No game state");
       return;
@@ -39,17 +38,16 @@ export class MultiplayerGame {
     
     // Check if cell is empty
     if (this.gameState.board[cellIndex] !== "") {
-      console.log("Cell already occupied");
       return;
     }
     
     // Check if it's this player's turn
     if (this.gameState.currentPlayer !== this.playerNumber) {
-      console.log("Not your turn");
       return;
     }
     
     const mark = this.playerNumber === 1 ? GAME_CONFIG.player1Mark : GAME_CONFIG.player2Mark;
+    this.gameState.playAudio();
     
     this.wsManager.send({
       type: 'move',

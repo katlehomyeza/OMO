@@ -12,6 +12,12 @@ export class GameState {
     this.board[cellIndex] = mark;
   }
 
+  playAudio(isOMO){
+    const omoSound  = new Audio("/assets/omo.mp3")
+    const moveSound = new Audio("/assets/writing.mp3")
+    isOMO ? omoSound.play() : moveSound.play()
+  }
+
   isValidMove(cellIndex, playerNumber) {
     return this.board[cellIndex] === "" && this.currentPlayer === playerNumber;
   }
